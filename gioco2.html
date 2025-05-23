@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco di Reazione</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        #box { width: 100px; height: 100px; background-color: red; position: absolute; display: none; }
+    </style>
+</head>
+<body>
+    <h1>Test di Reazione</h1>
+    <p>Inserisci il tuo nome e cognome:</p>
+    <input type="text" id="nome" placeholder="Nome">
+    <input type="text" id="cognome" placeholder="Cognome">
+    <button onclick="salvaDati()">Salva</button>
+    <button onclick="startGame()">Inizia il test</button>
+    <button onclick="scaricaJSON()">Scarica JSON</button>
+    <button onclick="inviaAlServer()">Invia al Server</button>
+    <div id="box" onclick="recordReaction()"></div>
+    <p id="results"></p>
+
+    <script>
+        let reactionTimes = [];
+        let startTime;
+        let interval;
+        let userData = {};
+
+        function salvaDati() {
+            let nome = document.getElementById("nome").value;
+            let cognome = document.getElementById("cognome").value;
+
+            if (nome && cognome) {
+                userData = { nome: nome, cognome: cognome };
+                alert("Dati salvati: " + JSON.stringify(userData));
+            } else {
+                alert("Inserisci nome e cognome!");
+            }
+        }
+
+        function startGame() {
+            if (!userData.nome || !userData.cognome) {
+                alert("Inserisci prima il tuo nome e cognome!");
+                return;
+            }
+
+            document.getElementById("results").innerText = "";
+            reactionTimes = [];
+            showBoxRandomly();
+        }
+
+        function showBoxRandomly() {
+            let delay = Math.random() * 3000 + 1000;
+            interval = setTimeout(() => {
+                startTime = new Date().getTime();
+                let box = document.getElementById("box");
+                box.style.top = Math.random() * (window.innerHeight - 100) + "px";
+                box.style.left = Math.random() * (window.innerWidth - 100) + "px";
+                box.style.display = "block";
+            }, delay);
+        }
+
+        function recordReaction() {
+            let reactionTime = new Date().getTime() - startTime;
+            reactionTimes.push(reactionTime);
+            document.getElementById("box").style.display = "none";
+            
+            if (reactionTimes.length < 5) {
+                showBoxRandomly();
+            } else {
+                clearTimeout(interval);
+                userData.tempiDiReazione = reactionTimes; 
+                document.getElementById("results").innerText = 
+                    `${userData.nome} ${userData.cognome}, i tuoi tempi di reazione sono: ${reactionTimes.join(" ms, ")} ms`;
+            }
+        }
+
+        function scaricaJSON() {
+            let jsonString = JSON.stringify(userData);
+            let blob = new Blob([jsonString], { type: "application/json" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "dati_reazione.json";
+            link.click();
+        }
+
+        function inviaAlServer() {
+            fetch("https://example.com/api/reazioni", { 
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => alert("Dati inviati con successo!"))
+            .catch(error => alert("Errore nell'invio: " + error));
+        }
+    </script>
+</body>
+</html>
